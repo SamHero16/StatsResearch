@@ -14,10 +14,43 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r}
+set.seed(0603)
+xaxis = c(rnorm(256,100,40),rnorm(256,400,40))
+
+x = data.frame(xaxis,rnorm(512,256,80))
+plot(x,xlim=c(0,512), ylim=c(0,512), main='Custom Axes')
+head(x)
+
+#Wrong idea
+
 ```
 
+
+
+
+```{r}
+#Essential package
+library(spectralGP)
+set.seed(15)
+gp=gp(c(512,512),matern.specdens,c(1,1))
+gp2 = gp(c(512,512),matern.specdens,c(.5,1))
+simulate(gp)
+simulate(gp2)
+plot(gp)
+plot(gp2)
+#How to combine two gp's?? // How to fiddle with the settings of the gp acurately. 
+#How to view the individual value at each point.
+#Matern.specdens specifics?
+
+
+
+
+    
+    
+    
+
+```
 ## Including Plots
 
 You can also embed plots, for example:
