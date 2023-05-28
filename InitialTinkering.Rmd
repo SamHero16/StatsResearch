@@ -34,11 +34,11 @@ head(x)
 library(spectralGP)
 set.seed(15)
 gp=gp(c(512,512),matern.specdens,c(1,1))
-gp2 = gp(c(512,512),matern.specdens,c(.5,1))
+gp2 = gp(c(512,512),matern.specdens,c(.5,1)) #This is simplest form of counfounding layer I believe.
 simulate(gp)
-simulate(gp2)
-plot(gp)
-plot(gp2)
+simulate(gp2) 
+plot(gp) #intended input
+plot(gp2) #added counfounding to input
 #How to combine two gp's?? // How to fiddle with the settings of the gp acurately. 
 #How to view the individual value at each point.
 #Matern.specdens specifics?
