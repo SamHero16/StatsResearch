@@ -26,15 +26,26 @@ head(x)
 
 ```
 
+```{r}
+#non spatial representation of idea/tinkering around more
 
+set.seed(100)
+confounding = rnorm(100,0,1)
+x = runif(100, 0, 1)
+y = 3*x +  rnorm(100,0,1)
+plot(x,y)
+summary(lm(y~x+confounding))
+abline(0.1584,2.7402)
+
+```
 
 
 ```{r}
 #Essential package
 library(spectralGP)
 set.seed(15)
-gp=gp(c(512,512),matern.specdens,c(1,1))
-gp2 = gp(c(512,512),matern.specdens,c(.5,1)) #This is simplest form of counfounding layer I believe.
+gp=gp(c(512,512),matern.specdens,c(.1,1))
+gp2 = gp(c(512,512),matern.specdens,c(.15,1)) #This is simplest form of counfounding layer I believe.
 simulate(gp)
 simulate(gp2) 
 plot(gp) #intended input
