@@ -61,10 +61,10 @@ popy = popx + confounder$process + rnorm(WD,0,1)
 for(i in 1:L){
   ##Create Sample set: important because data is related by location
   sample = sample(1:WD,16384)
-  ##Create instance of x = gp + confounder
+  ##Create sample
   x = popx[sample]
   
-  ##Create instance of y = x + confounder + noise
+  ##Create sample
   
   y = popy[sample]
   
@@ -75,7 +75,7 @@ for(i in 1:L){
  
   ##Loop through different number of TPRS
   for(i in 3:M){
-    workingSplines = data.matrix(TPRS[,1:i])
+    workingSplines = data.matrix(TPRS[,1:i]) #Switched back to matrix because data frame wasnt working
     
     #Fit Linear Regression Model
     model = tidy(lm(y~x + workingSplines)) # not working: does not help regression AT ALL
