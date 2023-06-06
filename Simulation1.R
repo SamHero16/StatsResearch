@@ -1,4 +1,4 @@
-  ### Simulation 1
+  ### Simulation 1: SLR
   
   library(spectralGP)
   library(mgcv)
@@ -10,11 +10,11 @@
   
   #Fully adjustable
   
-  L = 50 ## Number of samples taken
+  L = 5 ## Number of samples taken
   
   N = 16384 ## Sample Size
   
-  M = 100 ## Number of TPRS 
+  M = 50 ## Number of TPRS 
   
   ## Desired Outcomes 
   b0 = 0
@@ -32,15 +32,8 @@
   simulate(confounder)
   
   
-  ##Setup TPRS: Create the full set of 10, then increment down in loops
-  
-  #Make TPRS the size of the sample
-  ##ocreate = gp(c(128,128),matern.specdens,c(1,1))
-  ##o1 = ocreate$omega$omega1
-  ##o2 = ocreate$omega$omega2
-  ##o1o2 = data.frame(o1,o2)
-  ##Smoothframe = smooth.construct(smoother, data = o1o2, knots = NULL)
-  ##TPRS = data.frame(Smoothframe$X)
+  ##Setup TPRS: Create the full set, then increment later using loops
+  ##TPRS are size of population, will take sample later
   o1 = gp$omega$omega1
   o2 = gp$omega$omega2
   o1o2 = data.frame(o1,o2)
@@ -59,6 +52,7 @@
   
   #############
   
+  #Matrix for storage
   mat <- matrix(ncol = M -2)
   
   
@@ -84,16 +78,18 @@
     for(i in 3:M){
       workingSplines = data.matrix(TPRS[sample,1:i]) #Switched back to matrix because data frame wasnt working
       
-      #Fit Linear Regression Model
-      model = tidylm(y~x + workingSplines) 
+      #Fit Linear Regression Model and collect results
+      model = tidy(lm(y~x + workingSplines) )
       vecResults = append(vecResults, model$estimate[2]) 
     }
+    
+  ##Add data to matrix 
   mat = rbind(mat,vecResults)
    
    
    
   }
-  #Take off first row
+  #Take off first useless row
   mat = mat[-1,]
   
   
@@ -104,9 +100,14 @@
     MSEbynumspline[i] = mse
   }
   
-  #Resulting Information
+  #Resulting Information and loose summary of findings
   lm(y~x)
   MSEbynumspline
   plot(colMeans(mat))
+  plot(MSEbynumspline)
   min(colMeans(mat))
   min(MSEbynumspline)
+  
+  
+#propose to Study actual time effectiveness of creating the splines as side project. 
+  
