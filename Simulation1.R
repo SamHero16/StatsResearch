@@ -8,15 +8,11 @@
     
     ##Settings##
     
-    
-    
-    
-    
-    L = 10 ## Number of samples taken
+    L = 50 ## Number of samples taken
     
     N = 1000 ## Sample Size
     
-    M = 50 ## Number of TPRS 
+    M = 300 ## Number of TPRS 
     
     ## Desired Outcomes 
     b0 = 0
@@ -30,7 +26,7 @@
     simulate(gp)
     
     ##Confounding surface// change first entry of vector for adjustment
-    confounder = gp(c(D,D),matern.specdens,c(.5,2))
+    confounder = gp(c(D,D),matern.specdens,c(.25,2))
     simulate(confounder)
     
     
@@ -54,9 +50,13 @@
     #############
     
     #Matrix's for storage
-    mat <- matrix(nrow = L, ncol = M - 2)
-    CI <- matrix(0,nrow = 2, ncol = M-2)
-    colnames(CI) = c(3:M)
+    estimates <- matrix(nrow = L, ncol = M - 2)
+    coverage <- matrix(nrow = L, ncol = M - 2)
+    standardError <- matrix(nrow = L, ncol = M - 2)
+    
+    #Betas
+    #coverage,yes or no
+    #Standard error
     
     
     #Simulation Loop: Sample data, try 3:10 TPRS's, record MSE.
@@ -66,90 +66,132 @@
       sample = sample(1:WD,N)
       ##Create sample
       x = popx[sample]
-      
-      ##Create sample
-      
       y = popy[sample] + rnorm(N,0,1)
       
-      
       ##Create results vector for this sample
-      observation = numeric(M-2)
+      tempEstimates = numeric(M-2)
+      tempCoverage = numeric(M-2)
+      tempStandardError = numeric(M-2)
       
       
       
       
       ##Loop through different number of TPRS
       for(j in 3:M){
-        workingSplines = data.matrix(TPRS[sample,1:j]) #Switched back to matrix because data frame wasnt working
+        workingSplines = data.matrix(TPRS[sample,1:j])
+        
         #Fit Linear Regression Model and collect results
         model = lm(y~x + workingSplines)
-        observation[j-2] = (tidy(model)$estimate[2])
-        tempCI = tidy(confint(model, level=0.95))
         
-        ## First row is lower bound and second row is upper bound
-        CI[1,j-2] =CI[1,j-2] + tempCI$x[,"2.5 %"][2]
-        CI[2,j-2]= CI[2,j-2] + tempCI$x[,"97.5 %"][2]
+      
+        tempEstimates[j-2] = (tidy(model)$estimate[2])
         
-      }
+        tempCI = tidy(confint(model))
+        tempCoverage[j-2] = tempCI$x[,"2.5 %"][2] < b1 && tempCI$x[,"97.5 %"][2] > b1
+        
+        tempStandardError[j-2] = (tidy(model)$std.error[2])
+        }
       
     ##Add data to matrix 
-    mat[i,] = observation
-    
-     
-     
+    estimates[i,] = tempEstimates
+    coverage[i,] = tempCoverage
+    standardError[i,] = tempStandardError
      
     }
+    
     #Rename columns for clarity
-
-    colnames(mat) = c(3:M)
-    
-    #Find average of the CI's
-    CI = CI/L
+    colnames(estimates) = c(3:M)
+    colnames(coverage) = c(3:M)
+    colnames(standardError) = c(3:M)
     
     
     
-    ##MSE CALC
-    MSEbynumspline = apply(mat,2,function(w) sqrt(mean((w-b1)^2)))
-   
+    #Calculations
     
-    #Resulting Information and loose summary of findings
+      #MSE CALC
+    RMSE = apply(estimates,2,function(w) sqrt(mean((w-b1)^2)))
+      #Means of estimates
+    columnMeans = colMeans(estimates)
+      #Standard Deviation of the distribution of Estimates
+    sdOfEstimates = apply(estimates, 2, sd)
+      #bias
+    bias = apply(estimates, 2,function(w) mean(w-b1))
+      #percentCoverage
+    percentCoveage = apply(coverage,2,mean)
     
-      #Finding CI on MSE, dont know if this is correct
-    
-    rmse_interval <- function(rmse, deg_free, p_lower = 0.025, p_upper = 0.975){
-      tibble(.pred_lower = sqrt(deg_free / qchisq(p_upper, df = deg_free)) * rmse,
-             .pred_upper = sqrt(deg_free / qchisq(p_lower, df = deg_free)) * rmse)
-    }
-    
-    rmseint = rmse_interval(MSEbynumspline,M)
-    
-    
-    
-    ggplot() + 
-      geom_point(aes(x = 3:M,y = MSEbynumspline),size = .75) +
-      geom_point(aes(x = 3:M, y = rmseint$.pred_lower,colour = "red"),size = .1) +
-      geom_point(aes(x = 3:M, rmseint$.pred_upper,colour = "red"),size = .1) + 
-      labs( x = "TPRS degrees of freedom", y = "Mean Squared Error")
-    
-    ##ggsave("/Users/samherold/Desktop/StatsResearch/MSEplot.csv")
-    
-    
-    ggplot() + geom_point(aes(x = 3:M,y = colMeans(mat)),size = .5) + geom_path(aes(3:M,colMeans(mat)))+
-      geom_point(aes(x = 3:M, y = CI[1,],colour = "red"),size = .5) + geom_path(aes(3:M,CI[1,],colour = "red"))+
-      geom_point(aes(x = 3:M, y = CI[2,],colour = "red"),size = .5 ) + geom_path(aes(3:M,CI[2,],colour = "red"))+
-      labs( x = "TPRS degrees of freedom", y = "Point estimate") + 
-      geom_hline(yintercept = 1)
-    
-    ##ggsave("/Users/samherold/Desktop/StatsResearch/PointEstimatePlot.csv")
   
-    exp(b1)
+    ##Plots
+    
+      #RMSE
+    ggplot() +
+      geom_point(aes(x = 3:M,y = RMSE),size = .75) + geom_path(aes(3:M, RMSE)) + 
+      labs( x = "TPRS degrees of freedom", y = "Rooot Mean Squared Error",title = "Root Mean Square Error of Point Estimates",subtitle =  "by TPRS degrees of freedom")
+    
+    ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "RMSEPlot.pdf"))
+    
+    
+      #Bias
+    ggplot() +
+      geom_point(aes(x = 3:M,y = bias),size = .75) + geom_path(aes(3:M, bias)) + 
+      labs( x = "TPRS degrees of freedom", y = "Bias",title = "Bias of Point Estimates",subtitle =  "by TPRS degrees of freedom") 
+    
+    ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "BiasPlot.pdf"))
+     
+    
+      #coverage
+    ggplot() +
+      geom_point(aes(x = 3:M,y = percentCoveage),size = .75) + geom_path(aes(3:M, percentCoveage)) +
+      labs( x = "TPRS degrees of freedom", y = "Times the True b1 was Covered by Confidence Interval", title = "Coverage",subtitle =  "by TPRS degrees of freedom")
+    
+    ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "CoveragePlot.pdf"))
+    
+    
+      #Point Estimate
+    ggplot() + geom_point(aes(x = 3:M,y =  columnMeans),size = .5) + geom_path(aes(3:M, columnMeans))+
+      labs( x = "TPRS degrees of freedom", y = "Point estimate of b1", title = "Point Estimate's of b1",subtitle =  "by TPRS degrees of freedom") + 
+      geom_hline(yintercept = b1)
+    
+    ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "PointEstimatePlot.pdf"))
+    
+    
+    
+    
+    
+      #SE and SD 
+    ggplot() + geom_point(aes(x = 3:M,y =  colMeans(standardError)),size = .5) + geom_path(aes(3:M, colMeans(standardError)))+
+      geom_point(aes(x = 3:M,y =  sdOfEstimates),size = .5,col = "red") + geom_path(aes(3:M, sdOfEstimates),col = "red") +
+      labs( x = "TPRS degrees of freedom", y = "SD:Red and SE:Black", title = "Standard Deviation and Standard Error",subtitle =  "by TPRS degrees of freedom") 
+    
+    ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "SESD.pdf"))
+    
+    
+      
+       
+     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  
+    
     ##Saving results 
+    write.csv(coverage,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "CoverageMatrix.csv"))
+    write.csv(estimates,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "EstimatesMatrix.csv"))
+    write.csv(standardError,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "StandardErrorMatrix.csv"))
     
-      #####How do I add date to this? paste0 was acting wierd..
-      ##why is my filepath wrong
-    ##write.csv(mat,file="/Users/samherold/Desktop/StatsResearch/Estimates.csv")
+    write.csv(RMSE,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "RMSE.csv"))
+    write.csv(columnMeans,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "PointEstimates.csv"))
+    write.csv(sdOfEstimates,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "StandardDeviations.csv"))
+    write.csv(bias,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "Bias.csv"))
+    write.csv(percentCoveage,file=paste0("Results/",format(Sys.time(), "%d%B%Y"), "TimesCovered.csv"))
     
     
     
-  
+    
+    
     
