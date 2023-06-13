@@ -77,7 +77,7 @@
       
       
       
-      z = 1
+      
       ##Loop through different number of TPRS
       for(j in 3:M){
         workingSplines = data.matrix(TPRS[sample,1:j]) #Switched back to matrix because data frame wasnt working
@@ -87,9 +87,8 @@
         tempCI = tidy(confint(model, level=0.95))
         
         ## First row is lower bound and second row is upper bound
-        CI[z] = CI[z] + tempCI$x[,"2.5 %"][2]
-        CI[z+1]= CI[z+1] + tempCI$x[,"97.5 %"][2]
-        z = z + 2
+        CI[1,j-2] =CI[1,j-2] + tempCI$x[,"2.5 %"][2]
+        CI[2,j-2]= CI[2,j-2] + tempCI$x[,"97.5 %"][2]
         
       }
       
@@ -143,7 +142,7 @@
     
     ##ggsave("/Users/samherold/Desktop/StatsResearch/PointEstimatePlot.csv")
   
-    
+    exp(b1)
     ##Saving results 
     
       #####How do I add date to this? paste0 was acting wierd..

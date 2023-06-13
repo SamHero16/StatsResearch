@@ -13,11 +13,13 @@ L = 10 ## Number of samples taken
 
 N = 1000 ## Sample Size
 
-M = 50## Number of TPRS 
+M = 100## Number of TPRS 
 
 ## Desired Outcomes tbd
 
 D = 512 ## Dimension of Population
+
+
 
 
 ## Gaussian Process, c(.1,2) set arbitrarily
@@ -67,8 +69,6 @@ popy = popy + min2
 
 
 
-
-
 ##Storage
 mat <- matrix(nrow = L, ncol = M - 2)
 CI <- matrix(0,nrow = 2, ncol = M-2)
@@ -92,26 +92,23 @@ for(i in 1:L){
   
   
   
-  
   ##Create results vector for this sample
   observation = numeric(M-2)
   
   
   
- z = 1
+
   
   ##Loop through different number of TPRS
   for(j in 3:M){
-    workingSplines = data.matrix(TPRS[sample,1:j]) #Switched back to matrix because data frame wasnt working
+    workingSplines = data.matrix(ceiling((TPRS[sample,1:j]))) #Switched back to matrix because data frame wasnt working
     #Fit Linear Regression Model and collect results
     model = glm(y~x + workingSplines, family = "poisson")
     observation[j-2] = (tidy(model)$estimate[2])
-    tempCI = tidy(confint(model, level=0.95)) #THIS TAKES VERY LONG
+    ##tempCI = tidy(confint(model, level=0.95)) #THIS TAKES VERY LONG
     
-     ##First row is lower bound and second row is upper bound
-    CI[z] = CI[z] + tempCI$x[,"2.5 %"][2]
-    CI[z+1]= CI[z+1] + tempCI$x[,"97.5 %"][2]
-    z = z + 2
+    ##CI[1,j-2] =CI[1,j-2] + tempCI$x[,"2.5 %"][2]
+    ##CI[2,j-2]= CI[2,j-2] + tempCI$x[,"97.5 %"][2]
     
   }
   
@@ -123,12 +120,10 @@ for(i in 1:L){
 }
 
 colnames(mat) = c(3:M)
-CI = CI/L
+#CI = CI/L
 
 
-ggplot() + geom_point(aes(x = 3:M,y = colMeans(mat)),size = .5) + geom_path(aes(3:M,colMeans(mat)))+
-  geom_point(aes(x = 3:M, y = CI[1,],colour = "red"),size = .5) + geom_path(aes(3:M,CI[1,],colour = "red"))+
-  geom_point(aes(x = 3:M, y = CI[2,],colour = "red"),size = .5 ) + geom_path(aes(3:M,CI[2,],colour = "red"))+
+ggplot() + geom_point(aes(x = 3:M,y = colMeans(mat)),size = .5) +
   labs( x = "TPRS degrees of freedom", y = "Point estimate") + 
   geom_hline(yintercept = b1)
 
@@ -141,7 +136,7 @@ ggplot() + geom_point(aes(x = 3:M,y = colMeans(mat)),size = .5) + geom_path(aes(
 
 
 
-
+summary(model)
 
 
 
