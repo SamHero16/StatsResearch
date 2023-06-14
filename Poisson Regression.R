@@ -9,13 +9,15 @@ library(dplyr)
 
 ##Settings##
 
-L = 10 ## Number of samples taken
+L = 5 ## Number of samples taken
 
 N = 1000 ## Sample Size
 
-M = 100## Number of TPRS 
+M = 25## Number of TPRS 
 
-## Desired Outcomes tbd
+## Desired Outcomes 
+b0 = 0
+b1 = 1
 
 D = 512 ## Dimension of Population
 
@@ -27,7 +29,7 @@ gp=gp(c(D,D),matern.specdens,c(.1,2))
 simulate(gp)
 
 ##Confounding surface// change first entry of vector for adjustment
-confounder = gp(c(D,D),matern.specdens,c(.5,2))
+confounder = gp(c(D,D),matern.specdens,c(.25,2))
 simulate(confounder)
 
 
@@ -45,100 +47,108 @@ TPRS <- TPRS[,c(M:(M+1),1:(M-2))]
 
 
 
-##Create population and desired coeffecients.
+##Create population
 
-#Create desired Poisson model and log coeffiecents. 
 WD = D*D
 
-desiredx = gp$process
-desiredy = ceiling(desiredx) + ceiling(rnorm(N,0,1))
-min = -1*min(desiredy)
-desiredy = desiredx + min
-desiredmodel = tidy(glm(desiredy~desiredx,family = "poisson"))
-b0 = desiredmodel$estimate[1]
-b1 = desiredmodel$estimate[2]
+popx = gp$process + .5*confounder$process
+popy = popx + .5*confounder$process
+
+#Matrix's for storage
+
+estimates <- matrix(nrow = L, ncol = M - 2)
+coverage <- matrix(nrow = L, ncol = M - 2)
+standardError <- matrix(nrow = L, ncol = M - 2)
+b0estimates <- matrix(nrow = L, ncol = M - 2)
+
+#Betas
+#coverage,yes or no
+#Standard error
 
 
-
-#Actual counfounded population creation
-popx = gp$process + ceiling(.5*confounder$process) 
-popy = ceiling(popx) + ceiling(.5*confounder$process) 
-min2 = -1*min(popy)
-popy = popy + min2
-
-
-
-
-##Storage
-mat <- matrix(nrow = L, ncol = M - 2)
-CI <- matrix(0,nrow = 2, ncol = M-2)
-colnames(CI) = c(3:M)
-
-
-
-##Main loop
+#Simulation Loop: Sample data, try 3:M TPRS's, record MSE.
 
 for(i in 1:L){
   ##Create Sample set: important because data is related by location
   sample = sample(1:WD,N)
+  
   ##Create sample
   x = popx[sample]
-  
-  ##Create sample
-  ##abs is for rare case thas popy is 0 and rnorm is -1, happens approx less than once in a sample of 1000
-  y = abs(popy[sample] + ceiling(rnorm(N,0,1)))
-  
-  
-  
-  
-  
-  ##Create results vector for this sample
-  observation = numeric(M-2)
-  
+  y = rpois(WD,lambda = exp(-2 + popy))[sample]
   
   
 
+  ##Create results vector for this sample
+  tempEstimates = numeric(M-2)
+  tempCoverage = numeric(M-2)
+  tempStandardError = numeric(M-2)
+  tempb0 = numeric(M-2)
+  
+  
+  
   
   ##Loop through different number of TPRS
   for(j in 3:M){
-    workingSplines = data.matrix(ceiling((TPRS[sample,1:j]))) #Switched back to matrix because data frame wasnt working
+    workingSplines = data.matrix(TPRS[sample,1:j])
+    
     #Fit Linear Regression Model and collect results
-    model = glm(y~x + workingSplines, family = "poisson")
-    observation[j-2] = (tidy(model)$estimate[2])
-    ##tempCI = tidy(confint(model, level=0.95)) #THIS TAKES VERY LONG
+    model = glm(y~x + workingSplines,family = "poisson")
     
-    ##CI[1,j-2] =CI[1,j-2] + tempCI$x[,"2.5 %"][2]
-    ##CI[2,j-2]= CI[2,j-2] + tempCI$x[,"97.5 %"][2]
     
+    tempEstimates[j-2] = (tidy(model)$estimate[2])
+    
+    tempb0[j-2] = (tidy(model)$estimate[1])
+    
+    
+    
+    tempCI = tidy(confint(model))
+    tempCoverage[j-2] = tempCI$x[,"2.5 %"][2] < b1 && tempCI$x[,"97.5 %"][2] > b1
+    
+    tempStandardError[j-2] = (tidy(model)$std.error[2])
   }
   
   ##Add data to matrix 
-  mat[i,] = observation
+  estimates[i,] = tempEstimates
+  coverage[i,] = tempCoverage
+  standardError[i,] = tempStandardError
+  b0estimates[i,] = tempb0
   
   
-
 }
 
-colnames(mat) = c(3:M)
-#CI = CI/L
+#Rename columns for clarity
+colnames(estimates) = c(3:M)
+colnames(coverage) = c(3:M)
+colnames(standardError) = c(3:M)
 
 
-ggplot() + geom_point(aes(x = 3:M,y = colMeans(mat)),size = .5) +
-  labs( x = "TPRS degrees of freedom", y = "Point estimate") + 
+
+#Calculations
+
+#MSE CALC
+RMSE = apply(estimates,2,function(w) sqrt(mean((w-b1)^2)))
+#Means of estimates
+columnMeans = colMeans(estimates)
+#Standard Deviation of the distribution of Estimates
+sdOfEstimates = apply(estimates, 2, sd)
+#bias
+bias = apply(estimates, 2,function(w) mean(w-b1))
+#percent Coverage
+percentCoveage = apply(coverage,2,mean)
+
+
+
+ggplot() + geom_point(aes(x = 3:M,y =  columnMeans),size = .5) + geom_path(aes(3:M, columnMeans))+
+  labs( x = "TPRS degrees of freedom", y = "Point estimate of b1", title = "Point Estimate's of b1",subtitle =  "by TPRS degrees of freedom") + 
   geom_hline(yintercept = b1)
 
-
-
-
-#notes: 
-#creating CI's for general linearized models takes insanely long
-#The deisred outcome is b1 with no confounding right? What else would it be?
+ggplot() + geom_point(aes(x = 3:M,y =  colMeans(b0estimates)),size = .5) + geom_path(aes(3:M, colMeans(b0estimates)))+
+  labs( x = "TPRS degrees of freedom", y = "Point estimate of b0", title = "Point Estimate's of b0",subtitle =  "by TPRS degrees of freedom") 
 
 
 
 summary(model)
-
-
+#LOOK AT INTERCEPT
 
 
 

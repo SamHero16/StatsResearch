@@ -59,7 +59,7 @@
     #Standard error
     
     
-    #Simulation Loop: Sample data, try 3:10 TPRS's, record MSE.
+    #Simulation Loop: Sample data, try 3:M TPRS's, record MSE.
     
     for(i in 1:L){
       ##Create Sample set: important because data is related by location
@@ -116,7 +116,7 @@
     sdOfEstimates = apply(estimates, 2, sd)
       #bias
     bias = apply(estimates, 2,function(w) mean(w-b1))
-      #percentCoverage
+      #percent Coverage
     percentCoveage = apply(coverage,2,mean)
     
   
@@ -130,12 +130,14 @@
     ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "RMSEPlot.pdf"))
     
     
+    
       #Bias
     ggplot() +
       geom_point(aes(x = 3:M,y = bias),size = .75) + geom_path(aes(3:M, bias)) + 
       labs( x = "TPRS degrees of freedom", y = "Bias",title = "Bias of Point Estimates",subtitle =  "by TPRS degrees of freedom") 
     
     ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "BiasPlot.pdf"))
+    
      
     
       #coverage
@@ -146,13 +148,13 @@
     ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "CoveragePlot.pdf"))
     
     
+    
       #Point Estimate
     ggplot() + geom_point(aes(x = 3:M,y =  columnMeans),size = .5) + geom_path(aes(3:M, columnMeans))+
       labs( x = "TPRS degrees of freedom", y = "Point estimate of b1", title = "Point Estimate's of b1",subtitle =  "by TPRS degrees of freedom") + 
       geom_hline(yintercept = b1)
     
     ggsave(paste0("Results/",format(Sys.time(), "%d%B%Y"), "PointEstimatePlot.pdf"))
-    
     
     
     
