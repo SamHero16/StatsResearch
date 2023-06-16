@@ -6,6 +6,7 @@ library(mgcv)
 library(broom)
 library(ggplot2)
 library(dplyr)
+library(readr)
 
 
 
@@ -28,16 +29,21 @@ b1 = 1
 D = 512 
 WD = D*D
 
+
+  #Spectral Density for Gaussian Procces and Confounder
+g = .25
+c = .25
+
 ###########
 
 
 
 ##Gaussian Process, c(.1,2) set arbitrarily
-gp=gp(c(D,D),matern.specdens,c(.1,2))
+gp=gp(c(D,D),matern.specdens,c(g,2))
 simulate(gp)
 
 ##Confounding surface// change first entry of vector for adjustment
-confounder = gp(c(D,D),matern.specdens,c(.25,2))
+confounder = gp(c(D,D),matern.specdens,c(c,2))
 simulate(confounder)
 
 
@@ -72,6 +78,7 @@ for(i in 1:L){
   x = popx[sample]
   y = rpois(WD,lambda = exp(-2 + popy))[sample]
   
+
   #Temporary storage variables
   tempEstimates = numeric(M-2)
   tempCoverage = numeric(M-2)
@@ -113,10 +120,10 @@ colnames(b0estimates) = c(3:M)
 
 
 
-write.csv(coverage,file=paste0("rmd/PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-"), "CoverageMatrixPoisson.csv"))
-write.csv(estimates,file=paste0("rmd/PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-"), "EstimatesMatrixPoisson.csv"))
-write.csv(standardError,file=paste0("rmd/PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-"), "StandardErrorMatrixPoisson.csv"))
-write.csv(b0estimates,file=paste0("rmd/PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-"), "b0estimatesMatrixPoisson.csv"))
+write_csv(data.frame(coverage),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-CoverageMatrixPoisson.csv"))
+write_csv(data.frame(estimates),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-EstimatesMatrixPoisson.csv"))
+write_csv(data.frame(standardError),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-StandardErrorMatrixPoisson.csv"))
+write_csv(data.frame(b0estimates),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-b0estimatesMatrixPoisson.csv"))
 
 
 
