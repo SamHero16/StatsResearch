@@ -13,13 +13,13 @@ library(readr)
 ##Settings
 
 #Number of samples taken
-L = 5
+L = 50
 
 #Sample Size
 N = 1000 
 
 #Number of TPRS 
-M = 15
+M = 100
 
 #Desired Outcomes 
 b0 = 0
@@ -31,7 +31,8 @@ WD = D*D
 
 
 #Spectral Density for Gaussian Process *Not for confounder
-g = .1
+g = .25
+c = .25
 
 ###########
 
@@ -67,8 +68,6 @@ b0estimates <- matrix(nrow = L, ncol = M - 2)
 
 ##Simulation Loop: Sample data, try 3:M TPRS's, record MSE.
 for(i in 1:L){
-  
-  c = runif(1,.1,.5)
   ##Confounding surface
   confounder = gp(c(D,D),matern.specdens,c(c,2))
   simulate(confounder)
@@ -100,8 +99,8 @@ for(i in 1:L){
     tempEstimates[j-2] = (tidy(model)$estimate[2])
     tempb0[j-2] = (tidy(model)$estimate[1])
     
-    tempCI = confint(model)
-    tempCoverage[j-2] = tempCI["x","2.5 %"] < b1 && tempCI["x","97.5 %"] > b1
+    
+    tempCoverage[j-2] =  (tidy(model)$estimate[2] + (qnorm(.025) * tidy(model)$std.error[2])) < b1 &&  (tidy(model)$estimate[2] + (qnorm(.975) * tidy(model)$std.error[2])) > b1
     
     tempStandardError[j-2] = (tidy(model)$std.error[2])
   }

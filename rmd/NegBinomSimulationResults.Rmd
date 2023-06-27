@@ -11,7 +11,7 @@ library(ggplot2)
 library(dplyr)
 library(readr)
 ```
-This simulation looks at the effectiveness of varying degrees of freedom (up to ____ ) of Thin Plate Regression Splines as basis functions in a Negative Binomial Regression to try to remove spatial confounding. The true b1 is 1, and is our target. Samples of size 1000 were taken ____ times, stored and analyzed. 
+This simulation looks at the effectiveness of varying degrees of freedom (up to 100 ) of Thin Plate Regression Splines as basis functions in a Negative Binomial Regression to try to remove spatial confounding. The true b1 is 1, and is our target. Samples of size 1000 were taken 50 times. 4 experiments were ran with different density of the base gp surface and the confounding surface (combinations of .1 and .25).  
 
 
 # Trial 1
@@ -22,13 +22,13 @@ b1 = 1
 #INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
 #(Files found in RawData/)
 
-dateTime <- "21June2023-12:29"
+dateTime <- "26June2023-18:43"
 
 
 #Insert Confounder and GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
 #(Files found in RawData/)
 
-G = "0.1"
+G = "0.25"
 C = "0.1"
 
 estimatesRMD = read_csv(file =paste0("../RawData/",dateTime,"-G:",G,"-C:",C,"-EstimatesMatrixNegBinom.csv"))
@@ -112,14 +112,14 @@ b1 = 1
 #INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
 #(Files found in RawData/)
 
-dateTime <- "21June2023-12:31"
+dateTime <- "26June2023-19:10"
 
 
 #Insert Confounder and GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
 #(Files found in RawData/)
 
-G = "0.25"
-C = "0.25"
+G = "0.1"
+C = "0.1"
 
 estimatesRMD = read_csv(file =paste0("../RawData/",dateTime,"-G:",G,"-C:",C,"-EstimatesMatrixNegBinom.csv"))
 b0estimatesRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-C:",C,"-b0estimatesMatrixNegBinom.csv"))
@@ -214,14 +214,14 @@ b1 = 1
 #INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
 #(Files found in RawData/)
 
-dateTime <- "21June2023-12:29"
+dateTime <- "26June2023-19:41"
 
 
 #Insert Confounder and GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
 #(Files found in RawData/)
 
 G = "0.1"
-C = "0.1"
+C = "0.25"
 
 estimatesRMD = read_csv(file =paste0("../RawData/",dateTime,"-G:",G,"-C:",C,"-EstimatesMatrixNegBinom.csv"))
 b0estimatesRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-C:",C,"-b0estimatesMatrixNegBinom.csv"))
@@ -309,7 +309,7 @@ b1 = 1
 #INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
 #(Files found in RawData/)
 
-dateTime <- "21June2023-12:31"
+dateTime <- "26June2023-20:07"
 
 
 #Insert Confounder and GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
@@ -389,4 +389,4 @@ M = ncol(estimatesRMD)+2
 
 ```
 
-##//SUMMMMARYYYY ADDDDDDD    SUMMARYYYY
+TPRS's appear to not be effective in negative binomial regression. For 3/4 situations, the b1 estimate is almost always larger than than it would be if we didn't add TPRS's. Only when the confounder has a higher density setting do they seem moderately effective (g = .1, c = .25). At very best it will do slightly better at one or two specific degrees of freedom. SD and SE increase together. Also, in most trials, b0 skyrockets with more degrees of freedom.

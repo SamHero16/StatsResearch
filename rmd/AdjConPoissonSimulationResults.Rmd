@@ -11,18 +11,18 @@ library(ggplot2)
 library(dplyr)
 library(readr)
 ```
-This simulation looks at the effectiveness of varying degrees of freedom (up to ____ ) of Thin Plate Regression Splines as basis functions in a Poisson Regression to try to remove spatial confounding. The confounding surface is recreated at the start of every loop/sample of the simulation. It's spectral density is also taken randomly from .1-.5. The true b1 is 1, and is our target. Samples of size 1000 were taken ____ times, stored and analyzed. 
+This simulation looks at the effectiveness of varying degrees of freedom (up to 100) of Thin Plate Regression Splines as basis functions in a Poisson Regression to try to remove spatial confounding. The confounding surface is recreated at the start of every loop/sample of the simulation. The true b1 is 1, and is our target. Samples of size 1000 were taken 50 times. Two situations were examined: g = .1/c = .25 and g = .25/c = .25.
 
 
 # Trial 1
-```{r, echo=FALSE,message=FALSE}
+```{r echo=FALSE, message=FALSE}
 #INSERT DESIRED b1 
 b1 = 1
 
 #INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
 #(Files found in RawData/)
 
-dateTime <- "21June2023-14:32"
+dateTime <- "26June2023-21:28"
 
 
 #Insert GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
@@ -112,7 +112,7 @@ b1 = 1
 #INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
 #(Files found in RawData/)
 
-dateTime <- "16June2023-11:44"
+dateTime <- "26June2023-21:40"
 
 
 #Insert GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
@@ -190,203 +190,8 @@ M = ncol(estimatesRMD)+2
   labs( x = "TPRS degrees of freedom", y = "Point estimate of b0", title = "Point Estimate's of b0",subtitle =  "by TPRS degrees of freedom") + 
       geom_hline(yintercept = 0)
 
-    
-
-
-
-
-
 ```
 
 
+This had positive results in generally bringing b1 closer to 1, reducing error and having good coverage. b0 still very large however. 
 
-
-
-
-
-
-# Trial 3
-
-```{r,message=FALSE, echo=FALSE}
-#INSERT DESIRED b1 
-b1 = 1
-
-#INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
-#(Files found in RawData/)
-
-dateTime <- "16June2023-11:45"
-
-
-#Insert GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
-#(Files found in RawData/)
-
-G = "0.1"
-
-
-estimatesRMD = read_csv(file =paste0("../RawData/",dateTime,"-G:",G,"-EstimatesMatrixAdjConPoisson.csv"))
-b0estimatesRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-b0estimatesMatrixAdjConPoisson.csv"))
-coverageRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-CoverageMatrixAdjConPoisson.csv"))
-standardErrorRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-StandardErrorMatrixAdjConPoisson.csv"))
-```
-
-```{r, echo=FALSE}
-  #MSE CALC
-RMSERMD = apply(estimatesRMD,2,function(w) sqrt(mean((w-b1)^2)))
-
-  #Means of estimates
-columnMeansRMD = colMeans(estimatesRMD)
-
-  #Standard Deviation of the distribution of Estimates
-sdOfEstimatesRMD = apply(estimatesRMD, 2, sd)
-
-  #bias
-biasRMD = apply(estimatesRMD, 2,function(w) mean(w-b1))
-
-  #percent Coverage
-percentCoverageRMD = apply(coverageRMD,2,mean)
-```
-
-```{r, echo=FALSE}
-print(paste0("X created using a spectral density of: ", G))
-
-
-M = ncol(estimatesRMD)+2
-
-    
-#Point Estimate
-    ggplot() + geom_point(aes(x = 3:M,y =  columnMeansRMD),size = .5) + geom_path(aes(3:M, columnMeansRMD))+
-      labs( x = "TPRS degrees of freedom", y = "Point estimate of b1", title = "Point Estimate's of b1",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = b1)
-
-#RMSE
-    ggplot() +
-      geom_point(aes(x = 3:M,y = RMSERMD),size = .75) + geom_path(aes(3:M, RMSERMD)) + 
-      labs( x = "TPRS degrees of freedom", y = "Rooot Mean Squared Error",title = "Root Mean Square Error of Point Estimates",subtitle =  "by TPRS degrees of freedom")+ 
-      geom_hline(yintercept = 0)
-    
-
-#Bias
-    ggplot() +
-      geom_point(aes(x = 3:M,y = biasRMD),size = .75) + geom_path(aes(3:M, biasRMD)) + 
-      labs( x = "TPRS degrees of freedom", y = "Bias",title = "Bias of Point Estimates",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = 0)
-    
-
-    
-     
-    
-#Coverage
-    ggplot() +
-      geom_point(aes(x = 3:M,y = percentCoverageRMD),size = .75) + geom_path(aes(3:M, percentCoverageRMD)) +
-      labs( x = "TPRS degrees of freedom", y = "Times the True b1 was Covered by Confidence Interval", title = "Coverage",subtitle =  "by TPRS degrees of freedom")+ 
-      geom_hline(yintercept = 0)
-
-  
-#SE and SD 
-    ggplot() + geom_point(aes(x = 3:M,y =  colMeans(standardErrorRMD)),size = .5) + geom_path(aes(3:M, colMeans(standardErrorRMD)))+
-      geom_point(aes(x = 3:M,y =  sdOfEstimatesRMD),size = .5,col = "red") + geom_path(aes(3:M, sdOfEstimatesRMD),col = "red") +
-      labs( x = "TPRS degrees of freedom", y = "SD:Red and SE:Black", title = "Standard Deviation and Standard Error",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = 0)
-    
-#b0 estimate
-    ggplot() + geom_point(aes(x = 3:M,y =  colMeans(b0estimatesRMD)),size = .5) + geom_path(aes(3:M, colMeans(b0estimatesRMD)))+
-  labs( x = "TPRS degrees of freedom", y = "Point estimate of b0", title = "Point Estimate's of b0",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = 0)
-
-    
-
-
-
-
-
-```
-
-# Trial 4
-```{r,message=FALSE, echo=FALSE}
-#INSERT DESIRED b1 
-b1 = 1
-
-#INSERT DATE AND TIME INTO 'dateTime'.   USE FORM:   DDMONTHYYYY-HH:MM.    Ex:   "14June2023-12:00"
-#(Files found in RawData/)
-
-dateTime <- "16June2023-11:46"
-
-
-#Insert GP settings here in form "X.XX". Include leading zero.         Ex.         "0.1"        "0.25"
-#(Files found in RawData/)
-
-G = "0.25"
-
-
-estimatesRMD = read_csv(file =paste0("../RawData/",dateTime,"-G:",G,"-EstimatesMatrixAdjConPoisson.csv"))
-b0estimatesRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-b0estimatesMatrixAdjConPoisson.csv"))
-coverageRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-CoverageMatrixAdjConPoisson.csv"))
-standardErrorRMD = read_csv(file = paste0("../RawData/",dateTime,"-G:",G,"-StandardErrorMatrixAdjConPoisson.csv"))
-```
-
-```{r, echo=FALSE}
-  #MSE CALC
-RMSERMD = apply(estimatesRMD,2,function(w) sqrt(mean((w-b1)^2)))
-
-  #Means of estimates
-columnMeansRMD = colMeans(estimatesRMD)
-
-  #Standard Deviation of the distribution of Estimates
-sdOfEstimatesRMD = apply(estimatesRMD, 2, sd)
-
-  #bias
-biasRMD = apply(estimatesRMD, 2,function(w) mean(w-b1))
-
-  #percent Coverage
-percentCoverageRMD = apply(coverageRMD,2,mean)
-```
-
-```{r, echo=FALSE}
-print(paste0("X created using a spectral density of: ", G))
-
-
-M = ncol(estimatesRMD)+2
-
-#Point Estimate
-    ggplot() + geom_point(aes(x = 3:M,y =  columnMeansRMD),size = .5) + geom_path(aes(3:M, columnMeansRMD))+
-      labs( x = "TPRS degrees of freedom", y = "Point estimate of b1", title = "Point Estimate's of b1",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = b1)
-
-#RMSE
-    ggplot() +
-      geom_point(aes(x = 3:M,y = RMSERMD),size = .75) + geom_path(aes(3:M, RMSERMD)) + 
-      labs( x = "TPRS degrees of freedom", y = "Rooot Mean Squared Error",title = "Root Mean Square Error of Point Estimates",subtitle =  "by TPRS degrees of freedom")+ 
-      geom_hline(yintercept = 0)
-    
-
-#Bias
-    ggplot() +
-      geom_point(aes(x = 3:M,y = biasRMD),size = .75) + geom_path(aes(3:M, biasRMD)) + 
-      labs( x = "TPRS degrees of freedom", y = "Bias",title = "Bias of Point Estimates",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = 0)
-    
-
-    
-     
-    
-#Coverage
-    ggplot() +
-      geom_point(aes(x = 3:M,y = percentCoverageRMD),size = .75) + geom_path(aes(3:M, percentCoverageRMD)) +
-      labs( x = "TPRS degrees of freedom", y = "Times the True b1 was Covered by Confidence Interval", title = "Coverage",subtitle =  "by TPRS degrees of freedom")+ 
-      geom_hline(yintercept = 0)
-
-  
-#SE and SD 
-    ggplot() + geom_point(aes(x = 3:M,y =  colMeans(standardErrorRMD)),size = .5) + geom_path(aes(3:M, colMeans(standardErrorRMD)))+
-      geom_point(aes(x = 3:M,y =  sdOfEstimatesRMD),size = .5,col = "red") + geom_path(aes(3:M, sdOfEstimatesRMD),col = "red") +
-      labs( x = "TPRS degrees of freedom", y = "SD:Red and SE:Black", title = "Standard Deviation and Standard Error",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = 0)
-    
-#b0 estimate
-    ggplot() + geom_point(aes(x = 3:M,y =  colMeans(b0estimatesRMD)),size = .5) + geom_path(aes(3:M, colMeans(b0estimatesRMD)))+
-  labs( x = "TPRS degrees of freedom", y = "Point estimate of b0", title = "Point Estimate's of b0",subtitle =  "by TPRS degrees of freedom") + 
-      geom_hline(yintercept = 0)
-
-```
-
-//SUMMMMARYYYY ADDDDDDD    SUMMARYYYY

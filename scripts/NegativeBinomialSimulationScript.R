@@ -14,13 +14,13 @@ library(MASS)
 ##Settings
 
 #Number of samples taken
-L = 10
+L = 50
 
 #Sample Size
 N = 1000 
 
 #Number of TPRS 
-M = 15
+M = 100
 
 #Desired Outcomes 
 b0 = 0
@@ -98,8 +98,8 @@ for(i in 1:L){
     tempEstimates[j-2] = (tidy(model)$estimate[2])
     tempb0[j-2] = (tidy(model)$estimate[1])
     
-    tempCI = confint(model)
-    tempCoverage[j-2] = tempCI["x","2.5 %"] < b1 && tempCI["x","97.5 %"] > b1
+    tempCoverage[j-2] =  (tidy(model)$estimate[2] + (qnorm(.025) * tidy(model)$std.error[2])) < b1 &&  (tidy(model)$estimate[2] + (qnorm(.975) * tidy(model)$std.error[2])) > b1
+    
     
     tempStandardError[j-2] = (tidy(model)$std.error[2])
   }

@@ -1,5 +1,5 @@
-##Poisson Regression 
-
+##Poisson Regression with variable specdens. 
+ 
 
 library(spectralGP)
 library(mgcv)
@@ -7,19 +7,19 @@ library(broom)
 library(ggplot2)
 library(dplyr)
 library(readr)
-
+library(lmtest)
 
 
 ##Settings
 
   #Number of samples taken
-L = 5
+L = 50
 
   #Sample Size
 N = 1000 
 
   #Number of TPRS 
-M = 15
+M = 100
 
   #Desired Outcomes 
 b0 = 0
@@ -30,8 +30,8 @@ D = 512
 WD = D*D
 
 
-  #Spectral Density for Gaussian Procces and Confounder
-g = .25
+  #Spectral Density for Gaussian Procces and Confounder ###VARIABLE
+g = .1
 c = .25
 
 ###########
@@ -57,7 +57,6 @@ TPRS = data.frame(Smoothframe$X)
 TPRS <- TPRS[,c(M:(M+1),1:(M-2))]
 
 
-
 ##Create population
 popx = gp$process + .5*confounder$process
 popy = popx + .5*confounder$process
@@ -68,6 +67,7 @@ estimates <- matrix(nrow = L, ncol = M - 2)
 coverage <- matrix(nrow = L, ncol = M - 2)
 standardError <- matrix(nrow = L, ncol = M - 2)
 b0estimates <- matrix(nrow = L, ncol = M - 2)
+startingPoint = matrix(nrow = L)
 
 
 
@@ -78,7 +78,6 @@ for(i in 1:L){
   x = popx[sample]
   y = rpois(WD,lambda = exp(-2 + popy))[sample]
   
-
   #Temporary storage variables
   tempEstimates = numeric(M-2)
   tempCoverage = numeric(M-2)
@@ -86,19 +85,21 @@ for(i in 1:L){
   tempb0 = numeric(M-2)
   
   
+ 
+  
+  
   
   
   #Loop through different number of TPRS
   for(j in 3:M){
-    workingSplines = data.matrix(TPRS[sample,1:j])
+    Splines = data.matrix(TPRS[sample,1:j])
     
-    model = glm(y~x + workingSplines,family = "poisson")
-    
+    model = glm(y~x + Splines, family = 'poisson')
+  
     tempEstimates[j-2] = (tidy(model)$estimate[2])
     tempb0[j-2] = (tidy(model)$estimate[1])
     
-    tempCI = confint(model)
-    tempCoverage[j-2] = tempCI["x","2.5 %"] < b1 && tempCI["x","97.5 %"] > b1
+    tempCoverage[j-2] =  (tidy(model)$estimate[2] + (qnorm(.025) * tidy(model)$std.error[2])) < b1 &&  (tidy(model)$estimate[2] + (qnorm(.975) * tidy(model)$std.error[2])) > b1
     
     tempStandardError[j-2] = (tidy(model)$std.error[2])
   }
@@ -108,9 +109,12 @@ for(i in 1:L){
   coverage[i,] = tempCoverage
   standardError[i,] = tempStandardError
   b0estimates[i,] = tempb0
+  startingPoint[i,] = tidy(glm(y~x, family = 'poisson'))$estimate[2]
   
   
 }
+
+
 
 #Rename columns for clarity
 colnames(estimates) = c(3:M)
@@ -120,11 +124,11 @@ colnames(b0estimates) = c(3:M)
 
 
 
-write_csv(data.frame(coverage),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-CoverageMatrixPoisson.csv"))
-write_csv(data.frame(estimates),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-EstimatesMatrixPoisson.csv"))
-write_csv(data.frame(standardError),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-StandardErrorMatrixPoisson.csv"))
-write_csv(data.frame(b0estimates),file=paste0("PoissonRawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-b0estimatesMatrixPoisson.csv"))
-
+write_csv(data.frame(coverage),file=paste0("RawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-CoverageMatrixPoisson.csv"))
+write_csv(data.frame(estimates),file=paste0("RawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-EstimatesMatrixPoisson.csv"))
+write_csv(data.frame(standardError),file=paste0("RawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-StandardErrorMatrixPoisson.csv"))
+write_csv(data.frame(b0estimates),file=paste0("RawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-b0estimatesMatrixPoisson.csv"))
+write_csv(data.frame(startingPoint),file=paste0("RawData/",format(Sys.time(), "%d%B%Y-%H:%M-G:"),g,"-C:",c, "-startingPointMatrixPoisson.csv"))
 
 
 
